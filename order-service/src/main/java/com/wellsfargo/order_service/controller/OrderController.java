@@ -1,7 +1,8 @@
 package com.wellsfargo.order_service.controller;
 
+import com.wellsfargo.order_service.dto.OrderRequest;
+import com.wellsfargo.order_service.dto.OrderResponse;
 import com.wellsfargo.order_service.entity.Order;
-import com.wellsfargo.order_service.repository.OrderRepository;
 import com.wellsfargo.order_service.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -12,88 +13,83 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/orders")
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class OrderController {
     
     private static final Logger log = LoggerFactory.getLogger(OrderController.class);
     private final OrderService orderService;
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
     @PostMapping
-    public ResponseEntity<Order> createOrder(@Valid @RequestBody Order order) {
-        log.info("REST request to create order: {}", order);
-        Order createdOrder = orderService.createOrder(order);
+    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
+        log.info("REST request to create order: {}", orderRequest);
+        OrderResponse createdOrder = orderService.createOrder(orderRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdOrder);
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
         log.info("REST request to get order by ID: {}", id);
-        Optional<Order> order = orderService.getOrderById(id);
-        return order.map(ResponseEntity::ok)
+        return orderService.getOrderById(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
     
     @GetMapping("/order-number/{orderNumber}")
-    public ResponseEntity<Order> getOrderByOrderNumber(@PathVariable String orderNumber) {
+    public ResponseEntity<OrderResponse> getOrderByOrderNumber(@PathVariable String orderNumber) {
         log.info("REST request to get order by order number: {}", orderNumber);
-        Optional<Order> order = orderService.getOrderByOrderNumber(orderNumber);
-        return order.map(ResponseEntity::ok)
+        return orderService.getOrderByOrderNumber(orderNumber)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
     
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<Order>> getOrdersByCustomerId(@PathVariable String customerId) {
+    public ResponseEntity<List<OrderResponse>> getOrdersByCustomerId(@PathVariable String customerId) {
         log.info("REST request to get orders for customer: {}", customerId);
-        List<Order> orders = orderService.getOrdersByCustomerId(customerId);
-        return ResponseEntity.ok(orders);
+        List<OrderResponse> orderResponses = orderService.getOrdersByCustomerId(customerId);
+        return ResponseEntity.ok(orderResponses);
     }
     
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Order>> getOrdersByStatus(@PathVariable Order.OrderStatus status) {
+    public ResponseEntity<List<OrderResponse>> getOrdersByStatus(@PathVariable Order.OrderStatus status) {
         log.info("REST request to get orders with status: {}", status);
-        List<Order> orders = orderService.getOrdersByStatus(status);
-        return ResponseEntity.ok(orders);
+        List<OrderResponse> orderResponses = orderService.getOrdersByStatus(status);
+        return ResponseEntity.ok(orderResponses);
     }
     
     @GetMapping("/customer/{customerId}/status/{status}")
-    public ResponseEntity<List<Order>> getOrdersByCustomerIdAndStatus(
+    public ResponseEntity<List<OrderResponse>> getOrdersByCustomerIdAndStatus(
             @PathVariable String customerId, 
             @PathVariable Order.OrderStatus status) {
         log.info("REST request to get orders for customer: {} with status: {}", customerId, status);
-        List<Order> orders = orderService.getOrdersByCustomerIdAndStatus(customerId, status);
-        return ResponseEntity.ok(orders);
+        List<OrderResponse> orderResponses = orderService.getOrdersByCustomerIdAndStatus(customerId, status);
+        return ResponseEntity.ok(orderResponses);
     }
     
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
         log.info("REST request to get all orders");
-        List<Order> orders = orderService.getAllOrders();
-        return ResponseEntity.ok(orders);
+        List<OrderResponse> orderResponses = orderService.getAllOrders();
+        return ResponseEntity.ok(orderResponses);
     }
     
     @PutMapping("/{id}/status")
-    public ResponseEntity<Order> updateOrderStatus(
+    public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable Long id, 
             @RequestParam Order.OrderStatus status) {
         log.info("REST request to update order status for ID: {} to status: {}", id, status);
-        Order updatedOrder = orderService.updateOrderStatus(id, status);
+        OrderResponse updatedOrder = orderService.updateOrderStatus(id, status);
         return ResponseEntity.ok(updatedOrder);
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<Order> updateOrder(
+    public ResponseEntity<OrderResponse> updateOrder(
             @PathVariable Long id, 
-            @Valid @RequestBody Order orderDetails) {
+            @Valid @RequestBody OrderRequest orderRequest) {
         log.info("REST request to update order with ID: {}", id);
-        Order updatedOrder = orderService.updateOrder(id, orderDetails);
+        OrderResponse updatedOrder = orderService.updateOrder(id, orderRequest);
         return ResponseEntity.ok(updatedOrder);
     }
     
