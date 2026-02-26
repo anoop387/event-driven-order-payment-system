@@ -1,5 +1,6 @@
 package com.wellsfargo.order_service.controller;
 
+import com.wellsfargo.order_service.dto.BulkOrderSendResponse;
 import com.wellsfargo.order_service.dto.OrderRequest;
 import com.wellsfargo.order_service.dto.OrderResponse;
 import com.wellsfargo.order_service.entity.Order;
@@ -92,6 +93,13 @@ public class OrderController {
         OrderResponse updatedOrder = orderService.updateOrder(id, orderRequest);
         return ResponseEntity.ok(updatedOrder);
     }
+    
+    @PostMapping("/send-all-to-payment")
+public ResponseEntity<BulkOrderSendResponse> sendAllOrdersToPaymentService() {
+    log.info("REST request to send all orders to Payment Service");
+    BulkOrderSendResponse response = orderService.sendAllOrdersToPaymentService();
+    return ResponseEntity.ok(response);
+}
     
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {

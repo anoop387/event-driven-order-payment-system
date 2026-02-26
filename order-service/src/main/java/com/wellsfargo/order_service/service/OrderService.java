@@ -1,5 +1,7 @@
 package com.wellsfargo.order_service.service;
 
+import com.wellsfargo.order_service.dto.BulkOrderSendResponse;
+import com.wellsfargo.order_service.dto.BulkOrderSendResponse.OrderErrorInfo;
 import com.wellsfargo.order_service.dto.OrderRequest;
 import com.wellsfargo.order_service.dto.OrderResponse;
 import com.wellsfargo.order_service.entity.Order;
@@ -12,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -103,6 +106,7 @@ public class OrderService {
         return orderRepository.findAll().stream()
                 .map(orderMapper::toResponse)
                 .collect(Collectors.toList());
+
     }
     
     public OrderResponse updateOrderStatus(Long id, Order.OrderStatus status) {
@@ -154,6 +158,42 @@ public class OrderService {
         
         orderRepository.deleteById(id);
         log.info("Order deleted successfully with ID: {}", id);
+    }
+    
+    public BulkOrderSendResponse sendAllOrdersToPaymentService() {
+        log.info("Sending all orders to Payment Service");
+        
+        List<Order> allOrders = orderRepository.findAll();
+        List<OrderResponse> successfulOrders = new ArrayList<>();
+        List<OrderErrorInfo> failedOrders = new ArrayList<>();
+        
+        for (Order order : allOrders) {
+            try {
+                orderEventProducer.sendOrderCreatedEvent(order);
+                successfulOrders.add(orderMapper.toResponse(order));
+                log.debug("Sent order {} to Payment Service", order.getOrderNumber());
+            } catch (Exception e) {
+                log.error("Failed to send order {} to Payment Service", order.getOrderNumber(), e);
+                failedOrders.add(OrderErrorInfo.builder()
+                        .orderId(order.getId())
+                        .orderNumber(order.getOrderNumber())
+                        .errorMessage(e.getMessage())
+                        .build());
+            }
+        }
+        
+        BulkOrderSendResponse response = BulkOrderSendResponse.builder()
+                .totalOrders(allOrders.size())
+                .successfulSends(successfulOrders.size())
+                .failedSends(failedOrders.size())
+                .successfulOrders(successfulOrders)
+                .failedOrders(failedOrders)
+                .message(String.format("Processed %d orders: %d successful, %d failed", 
+                        allOrders.size(), successfulOrders.size(), failedOrders.size()))
+                .build();
+        
+        log.info("Bulk send completed: {}", response.getMessage());
+        return response;
     }
     
     private String generateOrderNumber() {
